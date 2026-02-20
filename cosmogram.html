@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CosmoGram Clicker Game</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        #main { margin: 20px; }
+        #autoclicker { display: none; }
+    </style>
+</head>
+<body>
+    <div id="main">
+        <h1>CosmoGram Clicker Game</h1>
+        <button id="click-button">Click me!</button>
+        <div id="score-display">Score: <span id="score">0</span></div>
+        <div id="autoclicker">
+            <p>Auto-clicker activated!</p>
+            <p>CPS Detected: <span id="cps">0</span></p>
+        </div>
+    </div>
+    <script>
+        let score = parseInt(localStorage.getItem('score')) || 0;
+        let cps = 0;
+        let autoClickEnabled = false;
+        let lastClickTime = Date.now();
+
+        function updateDisplay() {
+            document.getElementById('score').innerText = score;
+        }
+
+        function clickButton() {
+            let currentTime = Date.now();
+            score++;
+            document.getElementById('cps').innerText = getCPS();
+            localStorage.setItem('score', score);
+            checkCPS(currentTime);
+            updateDisplay();
+            lastClickTime = currentTime;
+        }
+
+        function getCPS() {
+            let timeSinceLastClick = (Date.now() - lastClickTime) / 1000; // seconds
+            cps = Math.round(1 / timeSinceLastClick);
+            return cps;
+        }
+
+        function checkCPS(currentTime) {
+            if (cps > 10) {
+                alert('Anti-cheat detected! CPS too high!');
+                resetGame();
+            }
+        }
+
+        function resetGame() {
+            alert('Game reset due to excessive CPS!');
+            score = 0;
+            localStorage.setItem('score', score);
+            updateDisplay();
+        }
+
+        document.getElementById('click-button').addEventListener('click', clickButton);
+
+        // Auto-clicker functionality
+        setInterval(() => {
+            if (autoClickEnabled) {
+                clickButton();
+            }
+        }, 1000);
+
+        function toggleAutoClick() {
+            autoClickEnabled = !autoClickEnabled;
+            document.getElementById('autoclicker').style.display = autoClickEnabled ? 'block' : 'none';
+        }
+
+        // Check if auto-clicker should start
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'a') toggleAutoClick();
+        });
+
+        updateDisplay();
+    </script>
+</body>
+</html>
