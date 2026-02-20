@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CosmoGram</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            margin: 0; padding: 0;
+            background: radial-gradient(circle at bottom, #1b2735 0%, #090a0f 100%);
+            color: white; font-family: sans-serif;
+            overflow: hidden; user-select: none; -webkit-tap-highlight-color: transparent;
+        }
+        .stars {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            background: transparent url('https://cdn.pixabay.com/photo/2016/01/27/15/25/space-1164579_960_720.png') repeat top center;
+            animation: moveStars 50s linear infinite; opacity: 0.5;
+        }
+        @keyframes moveStars { from { background-position: 0 0; } to { background-position: -1000px 500px; } }
+        .screen { display: none; height: 100vh; width: 100vw; flex-direction: column; align-items: center; padding: 20px; box-sizing: border-box; }
+        .screen.active { display: flex; }
+        .btn {
+            background: linear-gradient(45deg, #6b11ff, #00d4ff);
+            border: none; border-radius: 15px; color: white;
+            padding: 15px 30px; font-size: 18px; font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
+            transition: transform 0.1s; cursor: pointer; width: 80%; max-width: 300px; margin: 10px 0;
+        }
+        .btn:active { transform: scale(0.95); }
+        .header { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 10px; background: rgba(0,0,0,0.4); border-radius: 15px; margin-bottom: 20px; }
+        .user-info { display: flex; align-items: center; gap: 10px; }
+        .avatar { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #00d4ff; background: #333; }
+        .balance { font-size: 22px; font-weight: bold; color: #00d4ff; }
+        .clicker-container { flex: 1; display: flex; justify-content: center; align-items: center; flex-direction: column; }
+        .planet {
+            width: 200px; height: 200px; border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #4a90e2, #001f3f);
+            box-shadow: 0 0 50px rgba(74, 144, 226, 0.6), inset -20px -20px 40px rgba(0,0,0,0.5);
+            transition: transform 0.05s; cursor: pointer; touch-action: manipulation;
+        }
+        .planet:active { transform: scale(0.92); }
+        .panel { background: rgba(0,0,0,0.6); padding: 15px; border-radius: 15px; width: 100%; max-width: 400px; margin-bottom: 10px; }
+        .shop-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        input { width: 100%; padding: 12px; border-radius: 10px; border: none; margin-bottom: 10px; background: rgba(255,255,255,0.1); color: white; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+    <div class="stars"></div>
+
+    <div id="startScreen" class="screen active">
+        <h1 style="margin-top: 30vh; font-size: 40px; text-shadow: 0 0 20px #00d4ff;">CosmoGram</h1>
+        <button class="btn" onclick="startGame()">Начать</button>
+    </div>
+
+    <div id="gameScreen" class="screen">
+        <div class="header">
+            <div class="user-info">
+                <img id="userAvatar" class="avatar" src="https://via.placeholder.com/40">
+                <span id="userName">User</span>
+            </div>
+            <div class="balance-box">
+                <div class="balance" id="balanceDisplay">0.00</div>
+                <div style="font-size: 10px; text-align:right;">CosmoCoins</div>
+            </div>
+        </div>
+        <div class="clicker-container">
+            <div class="planet" id="planetBtn"></div>
+            <p>За клик: <span id="clickPowerDisplay">0.10</span> CC</p>
+        </div>
+        <div style="display:flex; gap:5px; width:100%;">
+            <button class="btn" style="font-size:12px;" onclick="showScreen('shopScreen')">Магазин</button>
+            <button class="btn" style="font-size:12px;" onclick="showScreen('withdrawScreen')">Вывод</button>
+            <button class="btn" style="font-size:12px;" onclick="showScreen('infoScreen')">Инфо</button>
+        </div>
+    </div>
+
+    <div id="shopScreen" class="screen">
+        <h2>Магазин</h2>
+        <div class="panel">
+            <div class="shop-item">
+                <div>Клик 0.20<br><small>Цена: 10000</small></div>
+                <button class="btn" style="width:auto;" onclick="buyUpgrade(10000, 0.20)">Купить</button>
+            </div>
+            <div class="shop-item">
+                <div>Клик 0.30<br><small>Цена: 17500</small></div>
+                <button class="btn" style="width:auto;" onclick="buyUpgrade(17500, 0.30)">Купить</button>
+            </div>
+            <div class="shop-item">
+                <div>Авто-майнер<br><small>1 CC / 30 сек. Цена: 25000</small></div>
+                <button class="btn" id="autoMinerBtn" style="width:auto;" onclick="buyAutoMiner()">Купить</button>
+            </div>
+        </div>
+        <button class="btn" onclick="showScreen('gameScreen')">Назад</button>
+    </div>
+
+    <div id="withdrawScreen" class="screen">
+        <h2>Вывод</h2>
+        <div class="panel">
+            <p>ID: <span id="tgUserId">...</span></p>
+            <input type="number" id="withdrawAmount" placeholder="Сумма">
+            <button class="btn" onclick="requestWithdraw()">Отправить админу</button>
+            <p style="font-size:10px; color:#aaa;">Админ: @saxsaiz</p>
+        </div>
+        <button class="btn" onclick="showScreen('gameScreen')">Назад</button>
+    </div>
+
+    <div id="infoScreen" class="screen">
+        <h2>CosmoGram</h2>
+        <div class="panel">
+            Кликай, зарабатывай CosmoCoins и меняй их на Gram.
+        </div>
+        <button class="btn" onclick="showScreen('gameScreen')">Назад</button>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        // Данные
+        let state = {
+            balance: 0,
+            clickPower: 0.10,
+            autoMiner: false,
+            lastSave: Date.now()
+        };
+
+        // Загрузка данных
+        function loadData() {
+            const saved = localStorage.getItem('cosmo_save');
+            if (saved) {
+                state = JSON.parse(saved);
+            }
+            updateUI();
+            if (state.autoMiner) startAutoMiner();
+        }
+
+        // Сохранение
+        function save() {
+            localStorage.setItem('cosmo_save', JSON.stringify(state));
+        }
+
+        function updateUI() {
+            document.getElementById('balanceDisplay').innerText = state.balance.toFixed(2);
+            document.getElementById('clickPowerDisplay').innerText = state.clickPower.toFixed(2);
+            if (state.autoMiner) {
+                const b = document.getElementById('autoMinerBtn');
+                b.innerText = "Активен";
+                b.disabled = true;
+                b.style.opacity = "0.5";
+            }
+        }
+
+        function startGame() {
+            const user = tg.initDataUnsafe?.user || { first_name: "Игрок", id: "000", photo_url: "" };
+            document.getElementById('userName').innerText = user.username ? "@"+user.username : user.first_name;
+            document.getElementById('tgUserId').innerText = user.id;
+            if (user.photo_url) document.getElementById('userAvatar').src = user.photo_url;
+            loadData();
+            showScreen('gameScreen');
+        }
+
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        // Клик и Анти-чит
+        let lastClick = 0;
+        document.getElementById('planetBtn').addEventListener('pointerdown', (e) => {
+            const now = Date.now();
+            if (now - lastClick < 70) return; // Ограничение ~14 кликов в сек
+            lastClick = now;
+
+            state.balance += state.clickPower;
+            tg.HapticFeedback.impactOccurred('light');
+            updateUI();
+            save();
+        });
+
+        function buyUpgrade(price, power) {
+            if (state.balance >= price && state.clickPower < power) {
+                state.balance -= price;
+                state.clickPower = power;
+                save();
+                updateUI();
+                tg.showAlert("Улучшено!");
+            } else {
+                tg.showAlert("Недостаточно средств или уже куплено");
+            }
+        }
+
+        function buyAutoMiner() {
+            if (state.balance >= 25000 && !state.autoMiner) {
+                state.balance -= 25000;
+                state.autoMiner = true;
+                save();
+                updateUI();
+                startAutoMiner();
+            }
+        }
+
+        function startAutoMiner() {
+            setInterval(() => {
+                state.balance += 1;
+                updateUI();
+                save();
+            }, 30000);
+        }
+
+        function requestWithdraw() {
+            const val = parseFloat(document.getElementById('withdrawAmount').value);
+            if (val > 0 && state.balance >= val) {
+                state.balance -= val;
+                save();
+                updateUI();
+                tg.showAlert("Заявка отправлена @saxsaiz! Баланс списан.");
+            } else {
+                tg.showAlert("Ошибка суммы");
+            }
+        }
+    </script>
+</body>
+</html>
