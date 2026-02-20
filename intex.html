@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CosmoGram</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        /* Базовые стили и космический фон */
+        body {
+            margin: 0; padding: 0;
+            background: radial-gradient(circle at bottom, #1b2735 0%, #090a0f 100%);
+            color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden; user-select: none;
+        }
+        
+        /* Анимированные звезды */
+        .stars {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            background: transparent url('https://cdn.pixabay.com/photo/2016/01/27/15/25/space-1164579_960_720.png') repeat top center;
+            animation: moveStars 50s linear infinite; opacity: 0.5;
+        }
+        @keyframes moveStars { from { background-position: 0 0; } to { background-position: -1000px 500px; } }
+
+        /* Экраны */
+        .screen { display: none; height: 100vh; width: 100vw; flex-direction: column; align-items: center; padding: 20px; box-sizing: border-box; }
+        .screen.active { display: flex; }
+
+        /* Кнопки */
+        .btn {
+            background: linear-gradient(45deg, #6b11ff, #00d4ff);
+            border: none; border-radius: 15px; color: white;
+            padding: 15px 30px; font-size: 18px; font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
+            transition: transform 0.1s; cursor: pointer; width: 80%; max-width: 300px; margin: 10px 0;
+        }
+        .btn:active { transform: scale(0.95); }
+        .btn:disabled { background: gray; box-shadow: none; cursor: not-allowed; }
+
+        /* Профиль */
+        .header { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 10px; box-sizing: border-box; background: rgba(0,0,0,0.4); border-radius: 15px; margin-bottom: 20px; }
+        .user-info { display: flex; align-items: center; gap: 10px; }
+        .avatar { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #00d4ff; background: #333; }
+        .balance-box { text-align: right; }
+        .balance { font-size: 22px; font-weight: bold; color: #00d4ff; }
+
+        /* Кликер */
+        .clicker-container { flex: 1; display: flex; justify-content: center; align-items: center; flex-direction: column; }
+        .planet {
+            width: 200px; height: 200px; border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #4a90e2, #001f3f);
+            box-shadow: 0 0 50px rgba(74, 144, 226, 0.6), inset -20px -20px 40px rgba(0,0,0,0.5);
+            transition: transform 0.05s; cursor: pointer;
+        }
+        .planet:active { transform: scale(0.92); box-shadow: 0 0 30px rgba(74, 144, 226, 0.8); }
+
+        /* Магазин и Инструкция */
+        .panel { background: rgba(0,0,0,0.6); padding: 15px; border-radius: 15px; width: 100%; max-width: 400px; overflow-y: auto; margin-bottom: 10px; }
+        .shop-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .nav-buttons { display: flex; gap: 10px; width: 100%; max-width: 400px; }
+        .nav-buttons .btn { font-size: 14px; padding: 10px; }
+        
+        /* Инпуты */
+        input { width: 100%; padding: 10px; border-radius: 10px; border: none; margin-bottom: 10px; background: rgba(255,255,255,0.1); color: white; font-size: 16px; box-sizing: border-box;}
+    </style>
+</head>
+<body>
+    <div class="stars"></div>
+
+    <div id="startScreen" class="screen active">
+        <h1 style="margin-top: 30vh; font-size: 40px; text-shadow: 0 0 20px #00d4ff;">CosmoGram</h1>
+        <p>Добывай CosmoCoins и меняй их на Gram!</p>
+        <button class="btn" onclick="startGame()">Начать игру</button>
+    </div>
+
+    <div id="gameScreen" class="screen">
+        <div class="header">
+            <div class="user-info">
+                <img id="userAvatar" class="avatar" src="" alt="Avatar">
+                <span id="userName">User</span>
+            </div>
+            <div class="balance-box">
+                <div class="balance" id="balanceDisplay">0.00</div>
+                <div style="font-size: 12px; color: #aaa;">CosmoCoins</div>
+            </div>
+        </div>
+        
+        <div class="clicker-container">
+            <div class="planet" id="planetBtn" onpointerdown="handleClick(event)"></div>
+            <div style="margin-top: 20px; color: #888;">За клик: <span id="clickPowerDisplay">0.10</span> CC</div>
+        </div>
+
+        <div class="nav-buttons">
+            <button class="btn" onclick="showScreen('shopScreen')">Улучшения</button>
+            <button class="btn" onclick="showScreen('withdrawScreen')">Вывод</button>
+            <button class="btn" onclick="showScreen('infoScreen')">Инфо</button>
+        </div>
+    </div>
+
+    <div id="shopScreen" class="screen">
+        <h2>Магазин Улучшений</h2>
+        <div class="panel">
+            <div class="shop-item">
+                <div><span>Клик 0.20 CC</span><br><small>Цена: 10,000</small></div>
+                <button class="btn" style="width: auto; padding: 5px 15px;" onclick="buyUpgrade(10000, 0.20)">Купить</button>
+            </div>
+            <div class="shop-item">
+                <div><span>Клик 0.30 CC</span><br><small>Цена: 17,500</small></div>
+                <button class="btn" style="width: auto; padding: 5px 15px;" onclick="buyUpgrade(17500, 0.30)">Купить</button>
+            </div>
+            <div class="shop-item" style="border: none;">
+                <div><span>Авто-майнер</span><br><small>1 CC каждые 30 сек<br>Цена: 25,000</small></div>
+                <button class="btn" id="autoMinerBtn" style="width: auto; padding: 5px 15px;" onclick="buyAutoMiner()">Купить</button>
+            </div>
+        </div>
+        <button class="btn" onclick="showScreen('gameScreen')">Назад</button>
+    </div>
+
+    <div id="withdrawScreen" class="screen">
+        <h2>Вывод средств</h2>
+        <div class="panel">
+            <p>Ваш ID: <strong id="tgUserId">...</strong></p>
+            <p>Баланс: <strong id="withdrawBalance">0.00</strong> CC</p>
+            <input type="number" id="withdrawAmount" placeholder="Сумма для вывода" min="1">
+            <button class="btn" onclick="requestWithdraw()">Вывести</button>
+            <p style="font-size: 12px; color: #aaa; text-align: center;">Заявки обрабатывает администратор @saxsaiz</p>
+        </div>
+        <button class="btn" onclick="showScreen('gameScreen')">Назад</button>
+    </div>
+
+    <div id="infoScreen" class="screen">
+        <h2>Инструкция</h2>
+        <div class="panel">
+            <p><strong>CosmoGram</strong> — это кликер, где вы можете зарабатывать CosmoCoins простыми нажатиями.</p>
+            <p>Накопленные монеты можно обменивать на криптовалюту Gram!</p>
+            <p>В разделе "Вывод" вы можете оставить заявку на выплату.</p>
+        </div>
+        <button class="btn" onclick="showScreen('gameScreen')">Понятно</button>
+    </div>
+
+    <script>
+        // Инициализация Telegram API
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Расширить на весь экран
+
+        // Игровые переменные
+        let balance = 0.00;
+        let clickPower = 0.10;
+        let autoMinerActive = false;
+        
+        // Анти-кликер (CPS check)
+        let clickTimestamps = [];
+        const MAX_CPS = 15; // Максимум кликов в секунду (чтобы отсечь автокликеры)
+
+        // Получение данных пользователя Telegram
+        const user = tg.initDataUnsafe?.user || {
+            first_name: "Гость",
+            id: "123456789",
+            photo_url: "https://via.placeholder.com/40"
+        };
+
+        function startGame() {
+            document.getElementById('userName').innerText = user.username ? `@${user.username}` : user.first_name;
+            document.getElementById('userAvatar').src = user.photo_url || "https://via.placeholder.com/40";
+            document.getElementById('tgUserId').innerText = user.id;
+            updateUI();
+            showScreen('gameScreen');
+        }
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('balanceDisplay').innerText = balance.toFixed(2);
+            document.getElementById('withdrawBalance').innerText = balance.toFixed(2);
+            document.getElementById('clickPowerDisplay').innerText = clickPower.toFixed(2);
+        }
+
+        function handleClick(e) {
+            const now = Date.now();
+            
+            // Анти-автокликер логика
+            clickTimestamps.push(now);
+            clickTimestamps = clickTimestamps.filter(t => now - t < 1000); // Оставляем клики только за последнюю секунду
+            
+            if (clickTimestamps.length > MAX_CPS) {
+                tg.showAlert("Слишком быстро! Похоже на автокликер.");
+                return; 
+            }
+
+            // Вибрация при клике (Haptic Feedback)
+            tg.HapticFeedback.impactOccurred('light');
+
+            balance += clickPower;
+            updateUI();
+        }
+
+        function buyUpgrade(cost, newPower) {
+            if (clickPower >= newPower) {
+                tg.showAlert("У вас уже есть это улучшение или лучше!");
+                return;
+            }
+            if (balance >= cost) {
+                balance -= cost;
+                clickPower = newPower;
+                tg.showAlert(`Успешно! Теперь за клик вы получаете ${newPower} CC.`);
+                updateUI();
+            } else {
+                tg.showAlert("Недостаточно CosmoCoins!");
+            }
+        }
+
+        function buyAutoMiner() {
+            if (autoMinerActive) {
+                tg.showAlert("Авто-майнер уже куплен!");
+                return;
+            }
+            if (balance >= 25000) {
+                balance -= 25000;
+                autoMinerActive = true;
+                document.getElementById('autoMinerBtn').disabled = true;
+                document.getElementById('autoMinerBtn').innerText = "Куплено";
+                tg.showAlert("Авто-майнер активирован!");
+                
+                // Запуск майнера
+                setInterval(() => {
+                    balance += 1;
+                    updateUI();
+                }, 30000); // Каждые 30 секунд
+                
+                updateUI();
+            } else {
+                tg.showAlert("Недостаточно CosmoCoins!");
+            }
+        }
+
+        function requestWithdraw() {
+            const amount = parseFloat(document.getElementById('withdrawAmount').value);
+            if (isNaN(amount) || amount <= 0) {
+                tg.showAlert("Введите корректную сумму.");
+                return;
+            }
+            if (amount > balance) {
+                tg.showAlert("Недостаточно средств для вывода.");
+                return;
+            }
+            
+            // Здесь данные должны отправляться на твой бэкенд
+            balance -= amount;
+            updateUI();
+            document.getElementById('withdrawAmount').value = '';
+            
+            // В реальном приложении отправляем данные боту (backend)
+            // tg.sendData(JSON.stringify({action: "withdraw", amount: amount, user_id: user.id}));
+            
+            tg.showAlert(`Заявка на вывод ${amount} CC создана! Ожидайте обработки администратором @saxsaiz.`);
+        }
+    </script>
+</body>
+</html>
+
