@@ -1,2 +1,0 @@
-# CosmoGram
-Cosmogram
