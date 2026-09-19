@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: limegram-webapp
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT app:app
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+      - key: BOT_DB_PATH
+        value: tenx_gram.db
+      - key: IP_HASH_SALT
+        sync: false
+      - key: TRUST_PROXY
+        value: "1"
+      - key: MAX_INIT_DATA_AGE
+        value: "86400"
